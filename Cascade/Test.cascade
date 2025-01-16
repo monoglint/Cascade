@@ -1,0 +1,17 @@
+string myVariable = "x"
+
+class testClass
+{
+	string [myVariable] = "foo"
+}
+
+class subClass
+{
+	string y = "bar"
+
+	construct default(int x) {}
+} of testClass
+
+string constructor = "default"
+
+object:subClass newobj = new subClass, default(3I)
