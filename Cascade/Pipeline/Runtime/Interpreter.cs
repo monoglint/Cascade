@@ -109,6 +109,10 @@ namespace Cascade2.Pipeline.Runtime
                 {
                     return EvaluateFloatLiteral(floatLiteral);
                 }
+                case DoubleLiteralNode doubleLiteral:
+                {
+                    return EvaluateDoubleLiteral(doubleLiteral);
+                }
                 case BooleanLiteralNode booleanLiteral:
                 {
                     return EvaluateBooleanLiteral(booleanLiteral);
@@ -458,6 +462,14 @@ namespace Cascade2.Pipeline.Runtime
             return RuntimeValueList.NullLiteral;
         }
 
+
+        /* 
+            =================
+               EXPRESSIONS 
+            =================
+        */
+
+
         public List<ParameterExpression> EvaluateParameterExpressionList(Domain domain, List<ParameterExpressionNode> parameterExpressionList)
         {
             int pointer = 0;
@@ -481,14 +493,6 @@ namespace Cascade2.Pipeline.Runtime
 
             return new ParameterExpression(evaluatedTypeExpression, parameterExpression.Identifier.Value, evaluatedDefaultValue);
         }
-
-
-        /* 
-            =================
-               EXPRESSIONS 
-            =================
-        */
-
 
         public FirstClassValue EvaluateCallExpression(Domain domain, CallExpressionNode callExpression)
         {
@@ -598,28 +602,40 @@ namespace Cascade2.Pipeline.Runtime
             BinaryResolveMode resolveMode = GetBinaryResolveMode(binaryExpressionLocation, left, right);
 
             // Concatenation.
-            if (binaryOperator == TokenKind.S_PLUS)
+            if (resolveMode == BinaryResolveMode.Concat)
             {
-                switch (resolveMode)
+                if (binaryOperator != TokenKind.S_PLUS)
                 {
-                    case BinaryResolveMode.Concat:
-                    {
-                        return new StringLiteralValue(string.Concat(left.ResolveString(), right.ResolveString()));
-                    }
-                    case BinaryResolveMode.Arithmetic:
+                    TerminateDiagnostic($"Can not perform the operation '{binaryOperator}' on {left.Kind} and {right.Kind}", binaryExpressionLocation); throw new Exception(); // !CALM
+                }
+
+                return new StringLiteralValue(string.Concat(left.ResolveString(), right.ResolveString()));
+            }
+            else if (resolveMode == BinaryResolveMode.Arithmetic)
+            {
+                switch (binaryOperator)
+                {
+                    case TokenKind.S_PLUS:
                     {
                         return new DoubleLiteralValue(left.ResolveDouble() + right.ResolveDouble());
                     }
+                    case TokenKind.S_MINUS:
+                    {
+                        return new DoubleLiteralValue(left.ResolveDouble() - right.ResolveDouble());
+                    }
+                    case TokenKind.S_ASTERISK:
+                    {
+                        return new DoubleLiteralValue(left.ResolveDouble() * right.ResolveDouble());
+                    }
+                    case TokenKind.S_SLASH:
+                    {
+                        return new DoubleLiteralValue(left.ResolveDouble() / right.ResolveDouble());
+                    }
+                    case TokenKind.S_CARET:
+                    {
+                        return new DoubleLiteralValue(Math.Pow(left.ResolveDouble(), right.ResolveDouble()));
+                    }
                 }
-            }
-            else if (binaryOperator == TokenKind.S_MINUS || binaryOperator == TokenKind.S_ASTERISK || binaryOperator == TokenKind.S_SLASH || binaryOperator == TokenKind.S_CARET)
-            {
-                if (resolveMode != BinaryResolveMode.Arithmetic)
-                {
-                    TerminateDiagnostic($"Attempted to perform arithmetic on {left.Kind}, {right.Kind}", binaryExpressionLocation); throw new Exception(); // !CALM
-                }
-
-                return new DoubleLiteralValue(0d);
             }
 
             throw new Exception(); // !CALM
@@ -701,7 +717,7 @@ namespace Cascade2.Pipeline.Runtime
         public static IntegerLiteralValue EvaluateIntegerLiteral(IntegerLiteralNode expression) => new(expression.Value);
         public static LongLiteralValue EvaluateLongLiteral(LongLiteralNode expression) => new(expression.Value);
         public static FloatLiteralValue EvaluateFloatLiteral(FloatLiteralNode expression) => new(expression.Value);
-        public static DoubleLiteralValue EvaluateFloatLiteral(DoubleLiteralNode expression) => new(expression.Value);
+        public static DoubleLiteralValue EvaluateDoubleLiteral(DoubleLiteralNode expression) => new(expression.Value);
         public static StringLiteralValue EvaluateStringLiteral(StringLiteralNode expression) => new(expression.Value);
         public static BooleanLiteralValue EvaluateBooleanLiteral(BooleanLiteralNode expression) => expression.Value ? RuntimeValueList.Bool_True : RuntimeValueList.Bool_False;
     }
