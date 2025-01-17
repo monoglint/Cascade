@@ -307,10 +307,10 @@ namespace Cascade2.Pipeline.Frontend.Parser.AST
         public ExpressionNode Value { get; }
         public TokenKind Operator { get; }
 
-        public AssignmentExpressionNode(LocationInfo location, ExpressionNode accessPoint, TokenKind opr, ExpressionNode value)
+        public AssignmentExpressionNode(LocationInfo location, ExpressionNode accessPoint, TokenKind assignmentOperator, ExpressionNode value)
         {
             AccessPoint = accessPoint;
-            Operator = opr;
+            Operator = assignmentOperator;
             Value = value;
 
             Location = location;
@@ -351,10 +351,10 @@ namespace Cascade2.Pipeline.Frontend.Parser.AST
         public ExpressionNode Value { get; }
         public TokenKind Operator { get; }
 
-        public UnaryExpressionNode(LocationInfo location, ExpressionNode value, TokenKind opr)
+        public UnaryExpressionNode(LocationInfo location, ExpressionNode value, TokenKind unaryOperator)
         {
             Value = value;
-            Operator = opr;
+            Operator = unaryOperator;
 
             Location = location;
         }
@@ -367,11 +367,11 @@ namespace Cascade2.Pipeline.Frontend.Parser.AST
         public ExpressionNode Right { get; }
         public TokenKind Operator { get; }
 
-        public BinaryExpressionNode(ExpressionNode left, ExpressionNode right, TokenKind opr)
+        public BinaryExpressionNode(ExpressionNode left, ExpressionNode right, TokenKind binaryOperator)
         {
             Left = left;
             Right = right;
-            Operator = opr;
+            Operator = binaryOperator;
 
             Location = new LocationInfo
             {

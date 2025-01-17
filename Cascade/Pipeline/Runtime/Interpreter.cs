@@ -96,6 +96,10 @@ namespace Cascade2.Pipeline.Runtime
                 {
                     return EvaluateAssignmentExpression(domain, assignmentExpression);
                 }
+                case BinaryExpressionNode binaryExpression:
+                {
+                    return EvaluateBinaryExpression(domain, binaryExpression);
+                }
 
                 case IntegerLiteralNode integerLiteral:
                 {
@@ -172,6 +176,40 @@ namespace Cascade2.Pipeline.Runtime
             =================
         */
 
+
+        public enum BinaryResolveMode
+        {
+            None,
+            Concat,
+            Arithmetic,
+        }
+
+        // This function will throw an exception if anything is invalid.
+        public BinaryResolveMode GetBinaryResolveMode(LocationInfo location, FirstClassValue left, FirstClassValue right)
+        {
+            RuntimeValueKind leftKind = left.Kind;
+            RuntimeValueKind rightKind = right.Kind;
+
+            bool leftIsNumber = left.IsNumber();
+            bool rightIsNumber = right.IsNumber();
+
+            if (leftKind == RuntimeValueKind.L_STRING || rightKind == RuntimeValueKind.L_STRING)
+            {
+                return BinaryResolveMode.Concat;
+            }
+
+            else if (leftIsNumber || rightIsNumber)
+            {
+                if (!leftIsNumber || !rightIsNumber)
+                {
+                    TerminateDiagnostic($"Arithmetic can not be performed on {leftKind} and {rightKind}.", location); throw new Exception(); // !CALM
+                };
+
+                return BinaryResolveMode.Arithmetic;
+            }
+
+            TerminateDiagnostic($"Failed to perform a binary expression on {leftKind} and {rightKind}.", location); throw new Exception(); // !CALM
+        }
 
         // Confirm arguments by making sure they are in line with the parameters of the function to call.
         public void VerifyAndLoadFunctionArguments(Domain parentDomain, Domain domain, LocationInfo callLocation, List<ParameterExpression> parameters, List<FirstClassValue> arguments)
@@ -405,7 +443,7 @@ namespace Cascade2.Pipeline.Runtime
 
             if (variableDeclaration.AccessPoint.Kind == AstNodeKind.E_ACCESS_MEMBER)
             {
-                var memberExpressionInfo = GetMemberExpressionInfo(domain, (AccessMemberExpressionNode)variableDeclaration.Value);
+                var memberExpressionInfo = GetMemberExpressionInfo(domain, (AccessMemberExpressionNode)variableDeclaration.AccessPoint);
                 string key = memberExpressionInfo.MemberName;
 
                 memberExpressionInfo.Object.DeclareMember(this, variableDeclaration.Location, variableDeclaration.Modifiers, evaluatedTypeExpression, key, (FirstClassValue)value);
@@ -541,19 +579,50 @@ namespace Cascade2.Pipeline.Runtime
             return new(typeExpression.Mutable, typeExpression.Standard, newMeta, typeExpression.Nullable);
         }
 
-        public FirstClassValue EvaluateArithmeticBinaryExpression(Domain domain, TokenKind opr, FirstClassValue value1, FirstClassValue value2)
+        public FirstClassValue EvaluateBinaryExpression(Domain domain, BinaryExpressionNode binaryExpression)
         {
+            FirstClassValue left = EvaluateFirstClass(domain, binaryExpression.Left);
+            FirstClassValue right = EvaluateFirstClass(domain, binaryExpression.Right);
+            TokenKind binaryOperator = binaryExpression.Operator;
 
-            // Concatenation.
-            if (opr == TokenKind.S_PLUS)
+            if (TokenCategories.ArithmeticOperators.Contains(binaryOperator))
             {
-                if (value1.Kind == RuntimeValueKind.L_STRING || value2.Kind == RuntimeValueKind.L_STRING)
-                {
-                    return new StringLiteralValue(string.Concat(value1.ResolveString(), value2.ResolveString()));
-                }
+                return EvaluateArithmeticBinaryExpression(domain, binaryExpression.Location, binaryOperator, left, right);
             }
 
-            return RuntimeValueList.NullLiteral;
+            TerminateDiagnostic($"This operator has not been implemented yet: {binaryOperator}", binaryExpression.Location); throw new Exception(); // !CALM
+        }
+
+        public FirstClassValue EvaluateArithmeticBinaryExpression(Domain domain, LocationInfo binaryExpressionLocation, TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
+        {
+            BinaryResolveMode resolveMode = GetBinaryResolveMode(binaryExpressionLocation, left, right);
+
+            // Concatenation.
+            if (binaryOperator == TokenKind.S_PLUS)
+            {
+                switch (resolveMode)
+                {
+                    case BinaryResolveMode.Concat:
+                    {
+                        return new StringLiteralValue(string.Concat(left.ResolveString(), right.ResolveString()));
+                    }
+                    case BinaryResolveMode.Arithmetic:
+                    {
+                        return new DoubleLiteralValue(left.ResolveDouble() + right.ResolveDouble());
+                    }
+                }
+            }
+            else if (binaryOperator == TokenKind.S_MINUS || binaryOperator == TokenKind.S_ASTERISK || binaryOperator == TokenKind.S_SLASH || binaryOperator == TokenKind.S_CARET)
+            {
+                if (resolveMode != BinaryResolveMode.Arithmetic)
+                {
+                    TerminateDiagnostic($"Attempted to perform arithmetic on {left.Kind}, {right.Kind}", binaryExpressionLocation); throw new Exception(); // !CALM
+                }
+
+                return new DoubleLiteralValue(0d);
+            }
+
+            throw new Exception(); // !CALM
         }
 
         public FirstClassValue EvaluateAssignmentExpression(Domain domain, AssignmentExpressionNode node)
@@ -570,7 +639,7 @@ namespace Cascade2.Pipeline.Runtime
                 {
                     TokenKind arithmeticOperator = TokenLibrary.AssignmentToArithmeticOperator(node.Operator);
 
-                    value = EvaluateArithmeticBinaryExpression(domain, arithmeticOperator, memberExpressionInfo.Object, value);
+                    value = EvaluateArithmeticBinaryExpression(domain, node.Location, arithmeticOperator, memberExpressionInfo.Object, value);
                 }
 
                 return memberExpressionInfo.Object.AssignMember(this, node.Location, memberExpressionInfo.MemberName, value);
@@ -588,7 +657,7 @@ namespace Cascade2.Pipeline.Runtime
                 }
 
                 TokenKind arithmeticOperator = TokenLibrary.AssignmentToArithmeticOperator(node.Operator);
-                value = EvaluateArithmeticBinaryExpression(domain, arithmeticOperator, existingValue!.Value, value);
+                value = EvaluateArithmeticBinaryExpression(domain, node.Location, arithmeticOperator, existingValue!.Value, value);
             }
 
             return domain.AssignVariable(this, node.Location, key, value);

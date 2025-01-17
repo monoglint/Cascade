@@ -5,7 +5,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <ApplicationIcon>CascadeIcon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="CascadeIcon.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="Properties\PublishProfiles\FolderProfile.pubxml.user" />

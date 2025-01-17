@@ -23,7 +23,7 @@ public static class RuntimeConsoleObject
                         new CsFunctionExpressionValue(
                             [
                                 new(
-                                    TypeExpressionList.StandardString,
+                                    new TypeExpression(false, StandardValueType.DYNAMIC),
                                     "text",
                                     RuntimeValueList.NullLiteral
                                 )

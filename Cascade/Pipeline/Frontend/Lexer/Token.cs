@@ -141,6 +141,14 @@ namespace Cascade2.Pipeline.Frontend.Lexer
             TokenKind.K_CLASS,
             TokenKind.K_OBJECT,
             TokenKind.K_CONSTRUCT,
+            TokenKind.K_DYNAMIC,
+        ];
+
+        public static readonly HashSet<TokenKind> ArithmeticOperators = 
+        [
+            TokenKind.S_PLUS, TokenKind.S_MINUS,
+            TokenKind.S_ASTERISK, TokenKind.S_SLASH,
+            TokenKind.S_CARET,
         ];
 
         public static readonly HashSet<TokenKind> LogicalOrOperators = [TokenKind.S_OR];
@@ -212,6 +220,7 @@ namespace Cascade2.Pipeline.Frontend.Lexer
         public bool IsUnaryOperator() => TokenCategories.UnaryOperators.Contains(Kind);
         public bool IsNumericSpecifier() => TokenCategories.NumericSpecifiers.Contains(Kind);
         public bool IsAssignmentOperator() => TokenCategories.AssignmentOperators.Contains(Kind);
+        public bool IsArithmeticOperator() => TokenCategories.ArithmeticOperators.Contains(Kind);
         public string GetCodeDiagnostic(string sourceCode)
         {
             return sourceCode.Substring(Location.Start, Location.End - Location.Start + 1);

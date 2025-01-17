@@ -43,6 +43,13 @@ namespace Cascade2.Pipeline.Runtime.Values
             RuntimeValueKind.E_CS_FUNCTION,
             RuntimeValueKind.E_FUNCTION,
         ];
+
+        public static readonly HashSet<RuntimeValueKind> Numbers = [
+            RuntimeValueKind.L_DOUBLE,
+            RuntimeValueKind.L_INTEGER,
+            RuntimeValueKind.L_LONG,
+            RuntimeValueKind.L_FLOAT,
+        ];
     }
 
 
@@ -59,6 +66,7 @@ namespace Cascade2.Pipeline.Runtime.Values
 
         public bool IsMemberKey() => RuntimeValueCategories.MemberKeys.Contains(Kind);
         public bool IsFunction() => RuntimeValueCategories.Functions.Contains(Kind);
+        public bool IsNumber() => RuntimeValueCategories.Numbers.Contains(Kind);
     }
 
 

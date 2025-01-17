@@ -1,17 +1,3 @@
-string myVariable = "x"
+double i = 2 + 2
 
-class testClass
-{
-	string [myVariable] = "foo"
-}
-
-class subClass
-{
-	string y = "bar"
-
-	construct default(int x) {}
-} of testClass
-
-string constructor = "default"
-
-object:subClass newobj = new subClass, default(3I)
+Console.Write(i)

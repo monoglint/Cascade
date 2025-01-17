@@ -620,16 +620,16 @@ namespace Cascade2.Pipeline.Frontend.Parser
         {
             ExpressionNode left = ParseConditionalTernaryExpression();
 
-            Token opr = Now;
+            Token currentOperator = Now;
 
-            if (opr.IsAssignmentOperator())
+            if (currentOperator.IsAssignmentOperator())
             {
                 _position++;
 
                 // Allow chaining
                 ExpressionNode Value = ParseAssignmentExpression();
 
-                return new AssignmentExpressionNode(Now.Location, left, opr.Kind, Value);
+                return new AssignmentExpressionNode(Now.Location, left, currentOperator.Kind, Value);
             }
 
             return left;
