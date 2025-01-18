@@ -613,29 +613,16 @@ namespace Cascade2.Pipeline.Runtime
             }
             else if (resolveMode == BinaryResolveMode.Arithmetic)
             {
-                switch (binaryOperator)
+                RuntimeValueKind arithmeticResult = ArithmeticResolver.DetermineProperArithmeticMethod(left.Kind, right.Kind);
+
+                return arithmeticResult switch
                 {
-                    case TokenKind.S_PLUS:
-                    {
-                        return new DoubleLiteralValue(left.ResolveDouble() + right.ResolveDouble());
-                    }
-                    case TokenKind.S_MINUS:
-                    {
-                        return new DoubleLiteralValue(left.ResolveDouble() - right.ResolveDouble());
-                    }
-                    case TokenKind.S_ASTERISK:
-                    {
-                        return new DoubleLiteralValue(left.ResolveDouble() * right.ResolveDouble());
-                    }
-                    case TokenKind.S_SLASH:
-                    {
-                        return new DoubleLiteralValue(left.ResolveDouble() / right.ResolveDouble());
-                    }
-                    case TokenKind.S_CARET:
-                    {
-                        return new DoubleLiteralValue(Math.Pow(left.ResolveDouble(), right.ResolveDouble()));
-                    }
-                }
+                    RuntimeValueKind.L_INTEGER => new IntegerLiteralValue(ArithmeticResolver.SolveIntegerArithmetic(binaryOperator, left.ResolveInteger(), right.ResolveInteger())),
+                    RuntimeValueKind.L_LONG => new LongLiteralValue(ArithmeticResolver.SolveLongArithmetic(binaryOperator, left.ResolveLong(), right.ResolveLong())),
+                    RuntimeValueKind.L_FLOAT => new FloatLiteralValue(ArithmeticResolver.SolveFloatArithmetic(binaryOperator, left.ResolveFloat(), right.ResolveFloat())),
+                    RuntimeValueKind.L_DOUBLE => new DoubleLiteralValue(ArithmeticResolver.SolveDoubleArithmetic(binaryOperator, left.ResolveDouble(), right.ResolveDouble())),
+                    _ => throw new NotImplementedException() // !CALM
+                };
             }
 
             throw new Exception(); // !CALM

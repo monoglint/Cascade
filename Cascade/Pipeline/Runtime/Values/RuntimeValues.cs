@@ -81,6 +81,9 @@ namespace Cascade2.Pipeline.Runtime.Values
     {
         public abstract TypeExpression Type { get; set; }
 
+        public virtual int ResolveInteger() => int.Parse(ResolveString());
+        public virtual long ResolveLong() => long.Parse(ResolveString());
+        public virtual float ResolveFloat() => float.Parse(ResolveString());
         public virtual double ResolveDouble() => Convert.ToDouble(ResolveString());
         public virtual string ResolveString()
         {
@@ -302,6 +305,11 @@ namespace Cascade2.Pipeline.Runtime.Values
         {
             return _value.ToString();
         }
+
+        public override float ResolveFloat()
+        {
+            return _value;
+        }
     }
 
     public sealed class IntegerLiteralValue(int value) : LiteralValue<int>
@@ -318,6 +326,11 @@ namespace Cascade2.Pipeline.Runtime.Values
         public override string ResolveString()
         {
             return _value.ToString();
+        }
+
+        public override int ResolveInteger()
+        {
+            return _value;
         }
     }
 
@@ -357,6 +370,11 @@ namespace Cascade2.Pipeline.Runtime.Values
         public override string ResolveString()
         {
             return _value.ToString();
+        }
+
+        public override long ResolveLong()
+        {
+            return _value;
         }
     }
 

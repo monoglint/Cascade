@@ -1,5 +1,5 @@
-﻿using Cascade2.Pipeline.Frontend.Parser.Tools;
-using Cascade2.Pipeline.Frontend.Parser.AST;
+﻿using Cascade2.Pipeline.Frontend.Lexer;
+using Cascade2.Pipeline.Frontend.Parser.Tools;
 
 namespace Cascade2.Pipeline.Runtime.Values
 {
@@ -18,6 +18,67 @@ namespace Cascade2.Pipeline.Runtime.Values
                 NullLiteralValue => "Null",
                 _ => throw new NotImplementedException()
             };
+        }
+    }
+
+    public static class ArithmeticResolver
+    {
+        public static double SolveDoubleArithmetic(TokenKind binaryOperator, double value0, double value1) => binaryOperator switch
+        {
+            TokenKind.S_PLUS => value0 + value1,
+            TokenKind.S_MINUS => value0 - value1,
+            TokenKind.S_ASTERISK => value0 * value1,
+            TokenKind.S_SLASH => value0 / value1,
+            TokenKind.S_CARET => Math.Pow(value0, value1),
+            _ => throw new NotImplementedException()
+        };
+
+        public static float SolveFloatArithmetic(TokenKind binaryOperator, float value0, float value1) => binaryOperator switch
+        {
+            TokenKind.S_PLUS => value0 + value1,
+            TokenKind.S_MINUS => value0 - value1,
+            TokenKind.S_ASTERISK => value0 * value1,
+            TokenKind.S_SLASH => value0 / value1,
+            TokenKind.S_CARET => MathF.Pow(value0, value1),
+            _ => throw new NotImplementedException()
+        };
+        public static int SolveIntegerArithmetic(TokenKind binaryOperator, int value0, int value1) => binaryOperator switch
+        {
+            TokenKind.S_PLUS => value0 + value1,
+            TokenKind.S_MINUS => value0 - value1,
+            TokenKind.S_ASTERISK => value0 * value1,
+            TokenKind.S_SLASH => value0 / value1,
+            TokenKind.S_CARET => Convert.ToInt32(Math.Pow(value0, value1)),
+            _ => throw new NotImplementedException()
+        };
+        public static long SolveLongArithmetic(TokenKind binaryOperator, long value0, long value1) => binaryOperator switch
+        {
+            TokenKind.S_PLUS => value0 + value1,
+            TokenKind.S_MINUS => value0 - value1,
+            TokenKind.S_ASTERISK => value0 * value1,
+            TokenKind.S_SLASH => value0 / value1,
+            TokenKind.S_CARET => Convert.ToInt32(Math.Pow(value0, value1)),
+            _ => throw new NotImplementedException()
+        };
+
+        public static RuntimeValueKind DetermineProperArithmeticMethod(RuntimeValueKind operand0, RuntimeValueKind operand1)
+        {
+            if (operand0 == RuntimeValueKind.L_INTEGER)
+            {
+                return operand1 == RuntimeValueKind.L_INTEGER ? RuntimeValueKind.L_INTEGER : operand1;
+            }
+
+            if (operand0 == RuntimeValueKind.L_LONG)
+            {
+                return operand1 == RuntimeValueKind.L_LONG ? RuntimeValueKind.L_LONG : operand1;
+            }
+
+            if (operand0 == RuntimeValueKind.L_FLOAT)
+            {
+                return operand1 == RuntimeValueKind.L_DOUBLE ? RuntimeValueKind.L_DOUBLE : operand1;
+            }
+
+            return RuntimeValueKind.L_DOUBLE;
         }
     }
 

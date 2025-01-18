@@ -1,3 +1,7 @@
-double i = 2D
+float x = 0
 
-i ^= 5D
+x += 2
+x *= 2
+x ^= 2
+
+Console.Write(x)
