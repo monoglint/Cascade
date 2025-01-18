@@ -1,5 +1,4 @@
 ﻿using Cascade.Pipeline.Frontend.Parser.Tools;
-using Cascade.Pipeline.Runtime.Objects;
 using Cascade.Pipeline.Runtime.Values;
 using Cascade.Pipeline.Shared;
 
@@ -31,7 +30,7 @@ namespace Cascade.Pipeline.Runtime.Tools
 
             if (IsGlobal)
             {
-                RuntimeConsoleObject.Insert(interpreter, this);
+                Objects.RuntimeConsoleObject.Insert(interpreter, this);
             }
         }
 
