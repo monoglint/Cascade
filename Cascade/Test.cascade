@@ -1,5 +1,1 @@
-string path = "FILE PATH HERE"
-
-File.Write(path, "Hello World!")
-
-Console.Write(File.Read(path))
+Console.Write("Hello, world!")

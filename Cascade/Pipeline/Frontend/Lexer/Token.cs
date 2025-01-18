@@ -291,10 +291,10 @@ namespace Cascade.Pipeline.Frontend.Lexer
             { "->", TokenKind.S_RARROW },
             { "<-", TokenKind.S_LARROW },
 
-            { "-I", TokenKind.S_INTEGER },
-            { "-L", TokenKind.S_LONG },
-            { "-F", TokenKind.S_FLOAT },
-            { "-D", TokenKind.S_DOUBLE },
+            { "$i", TokenKind.S_INTEGER },
+            { "$l", TokenKind.S_LONG },
+            { "$f", TokenKind.S_FLOAT },
+            { "$d", TokenKind.S_DOUBLE },
         };
 
         static readonly Dictionary<string, TokenKind> String = new()

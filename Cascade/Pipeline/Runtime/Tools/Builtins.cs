@@ -14,25 +14,29 @@ namespace Cascade.Pipeline.Runtime.Tools
         {
             public static readonly string Identifier = "File";
 
-            private static StringLiteralValue Read(Interpreter interpreter, Domain domain, List<FirstClassValue> arguments)
+            private static StringLiteralValue Read(Interpreter interpreter, Domain domain, LocationInfo callLocation, List<FirstClassValue> arguments)
             {
-                string result = File.ReadAllText(arguments[0].ResolveString());
+                string filePath = arguments[0].ResolveString();
+
+                interpreter.TerminateDiagnostic($"\"{filePath}\" is not a valid file path.", callLocation);
+
+                string result = File.ReadAllText(filePath);
 
                 return new StringLiteralValue(result);
             }
 
-            private static BooleanLiteralValue Write(Interpreter interpreter, Domain domain, List<FirstClassValue> arguments)
+            private static NullLiteralValue Write(Interpreter interpreter, Domain domain, LocationInfo callLocation, List<FirstClassValue> arguments)
             {
                 string filePath = arguments[0].ResolveString();
 
                 if (!File.Exists(filePath))
                 {
-                    return RuntimeValueList.Bool_False;
+                    interpreter.TerminateDiagnostic($"\"{filePath}\" is not a valid file path.", callLocation);
                 }
 
                 File.WriteAllText(filePath, arguments[1].ResolveString());
 
-                return RuntimeValueList.Bool_True;
+                return new NullLiteralValue();
             }
 
             public static void Insert(Interpreter interpreter, Domain domain)
@@ -80,14 +84,14 @@ namespace Cascade.Pipeline.Runtime.Tools
         {
             public static readonly string Identifier = "Console";
 
-            private static NullLiteralValue Write(Interpreter interpreter, Domain domain, List<FirstClassValue> arguments)
+            private static NullLiteralValue Write(Interpreter interpreter, Domain domain, LocationInfo callLocation, List<FirstClassValue> arguments)
             {
                 Console.WriteLine(arguments[0].ResolveString());
 
                 return RuntimeValueList.NullLiteral;
             }
 
-            public static StringLiteralValue Read(Interpreter interpreter, Domain domain, List<FirstClassValue> arguments)
+            public static StringLiteralValue Read(Interpreter interpreter, Domain domain, LocationInfo callLocation, List<FirstClassValue> arguments)
             {
                 string? result = Console.ReadLine();
 
