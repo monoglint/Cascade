@@ -1,9 +1,9 @@
-﻿using Cascade2.Pipeline.Runtime.Tools;
-using Cascade2.Pipeline.Shared;
-using Cascade2.Pipeline.Frontend.Lexer;
-using Cascade2.Pipeline.Frontend.Parser.Tools;
+﻿using Cascade.Pipeline.Runtime.Tools;
+using Cascade.Pipeline.Shared;
+using Cascade.Pipeline.Frontend.Lexer;
+using Cascade.Pipeline.Frontend.Parser.Tools;
 
-namespace Cascade2.Pipeline.Frontend.Parser.AST
+namespace Cascade.Pipeline.Frontend.Parser.AST
 {
     public enum AstNodeKind
     {

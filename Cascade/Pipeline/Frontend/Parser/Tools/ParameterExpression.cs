@@ -1,6 +1,6 @@
-﻿using Cascade2.Pipeline.Runtime.Values;
+﻿using Cascade.Pipeline.Runtime.Values;
 
-namespace Cascade2.Pipeline.Frontend.Parser.Tools
+namespace Cascade.Pipeline.Frontend.Parser.Tools
 {
     public class ParameterExpression(TypeExpression type, string identifier, FirstClassValue defaultValue)
     {

@@ -1,10 +1,10 @@
-﻿using Cascade2.Pipeline.Frontend.Parser.AST;
-using Cascade2.Pipeline.Frontend.Parser.Tools;
-using Cascade2.Pipeline.Runtime.Tools;
-using Cascade2.Pipeline.Runtime.Values;
-using Cascade2.Pipeline.Shared;
+﻿using Cascade.Pipeline.Frontend.Parser.AST;
+using Cascade.Pipeline.Frontend.Parser.Tools;
+using Cascade.Pipeline.Runtime.Tools;
+using Cascade.Pipeline.Runtime.Values;
+using Cascade.Pipeline.Shared;
 
-namespace Cascade2.Pipeline.Runtime.Objects
+namespace Cascade.Pipeline.Runtime.Objects
 {
     
 public static class RuntimeConsoleObject

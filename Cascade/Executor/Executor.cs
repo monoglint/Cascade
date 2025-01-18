@@ -1,11 +1,11 @@
 ﻿using System.Diagnostics;
-using Cascade2.Pipeline.Frontend.Lexer;
-using Cascade2.Pipeline.Frontend.Parser;
-using Cascade2.Pipeline.Frontend.Parser.AST;
-using Cascade2.Pipeline.Runtime;
-using Cascade2.Pipeline.Shared;
+using Cascade.Pipeline.Frontend.Lexer;
+using Cascade.Pipeline.Frontend.Parser;
+using Cascade.Pipeline.Frontend.Parser.AST;
+using Cascade.Pipeline.Runtime;
+using Cascade.Pipeline.Shared;
 
-namespace Cascade2.Executor
+namespace Cascade.Executor
 {
     public static class Executor
     {

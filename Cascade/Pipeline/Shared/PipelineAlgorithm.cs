@@ -1,4 +1,4 @@
-﻿namespace Cascade2.Pipeline.Shared
+﻿namespace Cascade.Pipeline.Shared
 {
     public class PipelineAlgorithm
     {

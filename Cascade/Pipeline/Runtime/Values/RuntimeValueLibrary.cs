@@ -1,7 +1,7 @@
-﻿using Cascade2.Pipeline.Frontend.Lexer;
-using Cascade2.Pipeline.Frontend.Parser.Tools;
+﻿using Cascade.Pipeline.Frontend.Lexer;
+using Cascade.Pipeline.Frontend.Parser.Tools;
 
-namespace Cascade2.Pipeline.Runtime.Values
+namespace Cascade.Pipeline.Runtime.Values
 {
     public static class RuntimeValuerResolver
     {

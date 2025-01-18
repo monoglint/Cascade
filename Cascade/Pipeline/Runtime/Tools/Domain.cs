@@ -1,9 +1,9 @@
-﻿using Cascade2.Pipeline.Frontend.Parser.Tools;
-using Cascade2.Pipeline.Runtime.Objects;
-using Cascade2.Pipeline.Runtime.Values;
-using Cascade2.Pipeline.Shared;
+﻿using Cascade.Pipeline.Frontend.Parser.Tools;
+using Cascade.Pipeline.Runtime.Objects;
+using Cascade.Pipeline.Runtime.Values;
+using Cascade.Pipeline.Shared;
 
-namespace Cascade2.Pipeline.Runtime.Tools
+namespace Cascade.Pipeline.Runtime.Tools
 {
     public enum DomainContext
     {

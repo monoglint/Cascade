@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
-using Cascade2.Pipeline.Shared;
+using Cascade.Pipeline.Shared;
 
-namespace Cascade2.Pipeline.Frontend.Lexer
+namespace Cascade.Pipeline.Frontend.Lexer
 {
     public enum TokenKind
     {
@@ -104,7 +104,7 @@ namespace Cascade2.Pipeline.Frontend.Lexer
         S_AND,
         S_OR,
         S_XOR,
-        S_NOT,
+        S_EXCLAMATION,
 
         S_EQUAL,              //  ==
         S_NOT_EQUAL,          //  !=
@@ -151,14 +151,20 @@ namespace Cascade2.Pipeline.Frontend.Lexer
             TokenKind.S_CARET,
         ];
 
-        public static readonly HashSet<TokenKind> LogicalOrOperators = [TokenKind.S_OR];
+        public static readonly HashSet<TokenKind> LogicalOperators =
+        [
+            TokenKind.S_AND, TokenKind.S_OR,
+        ];
+
         public static readonly HashSet<TokenKind> LogicalAndOperators = [TokenKind.S_AND];
+        public static readonly HashSet<TokenKind> LogicalOrOperators = [TokenKind.S_OR];
+
         public static readonly HashSet<TokenKind> DirectComparisonOperators = [TokenKind.S_EQUAL, TokenKind.S_NOT_EQUAL];
         public static readonly HashSet<TokenKind> NumericComparisonOperators = [TokenKind.S_LARROW, TokenKind.S_LESS_OR_EQUALS, TokenKind.S_RARROW, TokenKind.S_GREATER_OR_EQUALS];
         public static readonly HashSet<TokenKind> AdditiveOperators = [TokenKind.S_PLUS, TokenKind.S_MINUS];
         public static readonly HashSet<TokenKind> MultiplicativeOperators = [TokenKind.S_ASTERISK, TokenKind.S_SLASH];
         public static readonly HashSet<TokenKind> ExponentialOperators = [TokenKind.S_CARET];
-        public static readonly HashSet<TokenKind> UnaryOperators = [TokenKind.S_NOT, TokenKind.S_MINUS];
+        public static readonly HashSet<TokenKind> UnaryOperators = [TokenKind.S_EXCLAMATION, TokenKind.S_MINUS];
         public static readonly HashSet<TokenKind> AssignmentOperators = [TokenKind.S_ASSIGN, TokenKind.S_ASSIGN_ADD, TokenKind.S_ASSIGN_DIV, TokenKind.S_ASSIGN_EXP, TokenKind.S_ASSIGN_MOD, TokenKind.S_ASSIGN_MUL, TokenKind.S_ASSIGN_SUB];
 
         public static readonly HashSet<TokenKind> NumericSpecifiers = [TokenKind.S_FLOAT, TokenKind.S_DOUBLE, TokenKind.S_LONG, TokenKind.S_INTEGER];
@@ -210,8 +216,9 @@ namespace Cascade2.Pipeline.Frontend.Lexer
         public bool IsModifier() => TokenCategories.ModifierTokens.Contains(Kind);
         public bool IsExitStatement() => TokenCategories.ExitTokens.Contains(Kind);
         public bool IsType() => TokenCategories.TypeTokens.Contains(Kind);
-        public bool IsLogicalOrOperator() => TokenCategories.LogicalOrOperators.Contains(Kind);
+        public bool IsLogicalOperator() => TokenCategories.LogicalOperators.Contains(Kind);
         public bool IsLogicalAndOperator() => TokenCategories.LogicalAndOperators.Contains(Kind);
+        public bool IsLogicalOrOperator() => TokenCategories.LogicalOrOperators.Contains(Kind);
         public bool IsDirectComparisonOperator() => TokenCategories.DirectComparisonOperators.Contains(Kind);
         public bool IsNumericComparisonOperator() => TokenCategories.NumericComparisonOperators.Contains(Kind);
         public bool IsAdditiveOperator() => TokenCategories.AdditiveOperators.Contains(Kind);
@@ -260,7 +267,7 @@ namespace Cascade2.Pipeline.Frontend.Lexer
             { '<', TokenKind.S_LARROW },
             { '>', TokenKind.S_RARROW },
 
-            { '!', TokenKind.S_NOT },
+            { '!', TokenKind.S_EXCLAMATION },
 
             { 'I', TokenKind.S_INTEGER },
             { 'L', TokenKind.S_LONG },

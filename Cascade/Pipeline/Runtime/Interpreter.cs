@@ -1,13 +1,13 @@
-﻿using Cascade2.Pipeline.Runtime.Values;
-using Cascade2.Pipeline.Runtime.Tools;
-using Cascade2.Pipeline.Shared;
-using Cascade2.Pipeline.Frontend.Lexer;
-using Cascade2.Pipeline.Frontend.Parser.AST;
-using Cascade2.Pipeline.Frontend.Parser.Tools;
+﻿using Cascade.Pipeline.Runtime.Values;
+using Cascade.Pipeline.Runtime.Tools;
+using Cascade.Pipeline.Shared;
+using Cascade.Pipeline.Frontend.Lexer;
+using Cascade.Pipeline.Frontend.Parser.AST;
+using Cascade.Pipeline.Frontend.Parser.Tools;
 using System.Text;
 using System.Diagnostics;
 
-namespace Cascade2.Pipeline.Runtime
+namespace Cascade.Pipeline.Runtime
 {
     public class Interpreter : PipelineAlgorithm
     {
@@ -96,9 +96,18 @@ namespace Cascade2.Pipeline.Runtime
                 {
                     return EvaluateAssignmentExpression(domain, assignmentExpression);
                 }
+
+                case TernaryExpressionNode ternaryExpression:
+                {
+                    return EvaluateTernaryExpression(domain, ternaryExpression);
+                }
                 case BinaryExpressionNode binaryExpression:
                 {
                     return EvaluateBinaryExpression(domain, binaryExpression);
+                }
+                case UnaryExpressionNode unaryExpression:
+                {
+                    return EvaluateUnaryExpression(domain, unaryExpression);
                 }
 
                 case IntegerLiteralNode integerLiteral:
@@ -181,15 +190,15 @@ namespace Cascade2.Pipeline.Runtime
         */
 
 
-        public enum BinaryResolveMode
+        public enum ArithmeticBinaryResolveMode
         {
             None,
             Concat,
-            Arithmetic,
+            Math,
         }
 
         // This function will throw an exception if anything is invalid.
-        public BinaryResolveMode GetBinaryResolveMode(LocationInfo location, FirstClassValue left, FirstClassValue right)
+        public ArithmeticBinaryResolveMode GetArithmeticBinaryResolveMode(LocationInfo location, FirstClassValue left, FirstClassValue right)
         {
             RuntimeValueKind leftKind = left.Kind;
             RuntimeValueKind rightKind = right.Kind;
@@ -199,7 +208,7 @@ namespace Cascade2.Pipeline.Runtime
 
             if (leftKind == RuntimeValueKind.L_STRING || rightKind == RuntimeValueKind.L_STRING)
             {
-                return BinaryResolveMode.Concat;
+                return ArithmeticBinaryResolveMode.Concat;
             }
 
             else if (leftIsNumber || rightIsNumber)
@@ -209,14 +218,14 @@ namespace Cascade2.Pipeline.Runtime
                     TerminateDiagnostic($"Arithmetic can not be performed on {leftKind} and {rightKind}.", location); throw new Exception(); // !CALM
                 };
 
-                return BinaryResolveMode.Arithmetic;
+                return ArithmeticBinaryResolveMode.Math;
             }
 
             TerminateDiagnostic($"Failed to perform a binary expression on {leftKind} and {rightKind}.", location); throw new Exception(); // !CALM
         }
 
         // Confirm arguments by making sure they are in line with the parameters of the function to call.
-        public void VerifyAndLoadFunctionArguments(Domain parentDomain, Domain domain, LocationInfo callLocation, List<ParameterExpression> parameters, List<FirstClassValue> arguments)
+        public void VerifyAndLoadFunctionArguments(Domain domain, LocationInfo callLocation, List<ParameterExpression> parameters, List<FirstClassValue> arguments)
         {
             int pointer = 0;
 
@@ -248,7 +257,7 @@ namespace Cascade2.Pipeline.Runtime
         {
             Domain localDomain = new(this, parentDomain, DomainContext.FUNCTION);
 
-            VerifyAndLoadFunctionArguments(parentDomain, localDomain, callLocation, function.Parameters, arguments);
+            VerifyAndLoadFunctionArguments(localDomain, callLocation, function.Parameters, arguments);
 
             // Add in custom variables.
             if (defaultVariables != null)
@@ -583,6 +592,18 @@ namespace Cascade2.Pipeline.Runtime
             return new(typeExpression.Mutable, typeExpression.Standard, newMeta, typeExpression.Nullable);
         }
 
+        public FirstClassValue EvaluateTernaryExpression(Domain domain, TernaryExpressionNode ternaryExpression)
+        {
+            BooleanLiteralValue condition = (BooleanLiteralValue)EvaluateExpectedKind(domain, ternaryExpression.Condition, RuntimeValueKind.L_BOOLEAN);
+
+            if (condition.Value)
+            {
+                return EvaluateFirstClass(domain, ternaryExpression.TrueBranch);
+            }
+
+            return EvaluateFirstClass(domain, ternaryExpression.FalseBranch);
+        }
+
         public FirstClassValue EvaluateBinaryExpression(Domain domain, BinaryExpressionNode binaryExpression)
         {
             FirstClassValue left = EvaluateFirstClass(domain, binaryExpression.Left);
@@ -591,41 +612,88 @@ namespace Cascade2.Pipeline.Runtime
 
             if (TokenCategories.ArithmeticOperators.Contains(binaryOperator))
             {
-                return EvaluateArithmeticBinaryExpression(domain, binaryExpression.Location, binaryOperator, left, right);
+                return EvaluateArithmeticBinaryExpression(binaryExpression.Location, binaryOperator, left, right);
+            }
+            else if (TokenCategories.LogicalOperators.Contains(binaryOperator))
+            {
+                return EvaluateLogicalBinaryExpression(binaryExpression.Location, binaryOperator, left, right);
             }
 
             TerminateDiagnostic($"This operator has not been implemented yet: {binaryOperator}", binaryExpression.Location); throw new Exception(); // !CALM
         }
 
-        public FirstClassValue EvaluateArithmeticBinaryExpression(Domain domain, LocationInfo binaryExpressionLocation, TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
+        public FirstClassValue EvaluateLogicalBinaryExpression(LocationInfo binaryExpressionLocation, TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
         {
-            BinaryResolveMode resolveMode = GetBinaryResolveMode(binaryExpressionLocation, left, right);
-
-            // Concatenation.
-            if (resolveMode == BinaryResolveMode.Concat)
+            if (left.Kind != RuntimeValueKind.L_BOOLEAN || right.Kind != RuntimeValueKind.L_BOOLEAN)
             {
-                if (binaryOperator != TokenKind.S_PLUS)
-                {
-                    TerminateDiagnostic($"Can not perform the operation '{binaryOperator}' on {left.Kind} and {right.Kind}", binaryExpressionLocation); throw new Exception(); // !CALM
-                }
-
-                return new StringLiteralValue(string.Concat(left.ResolveString(), right.ResolveString()));
-            }
-            else if (resolveMode == BinaryResolveMode.Arithmetic)
-            {
-                RuntimeValueKind arithmeticResult = ArithmeticResolver.DetermineProperArithmeticMethod(left.Kind, right.Kind);
-
-                return arithmeticResult switch
-                {
-                    RuntimeValueKind.L_INTEGER => new IntegerLiteralValue(ArithmeticResolver.SolveIntegerArithmetic(binaryOperator, left.ResolveInteger(), right.ResolveInteger())),
-                    RuntimeValueKind.L_LONG => new LongLiteralValue(ArithmeticResolver.SolveLongArithmetic(binaryOperator, left.ResolveLong(), right.ResolveLong())),
-                    RuntimeValueKind.L_FLOAT => new FloatLiteralValue(ArithmeticResolver.SolveFloatArithmetic(binaryOperator, left.ResolveFloat(), right.ResolveFloat())),
-                    RuntimeValueKind.L_DOUBLE => new DoubleLiteralValue(ArithmeticResolver.SolveDoubleArithmetic(binaryOperator, left.ResolveDouble(), right.ResolveDouble())),
-                    _ => throw new NotImplementedException() // !CALM
-                };
+                TerminateDiagnostic($"Can not perform the operation '{binaryOperator}' on {left.Kind} and {right.Kind}", binaryExpressionLocation); throw new Exception(); // !CALM
             }
 
-            throw new Exception(); // !CALM
+            bool result = binaryOperator switch
+            {
+                TokenKind.S_AND => ((BooleanLiteralValue)left).Value && ((BooleanLiteralValue)right).Value,
+                TokenKind.S_OR => ((BooleanLiteralValue)left).Value || ((BooleanLiteralValue)right).Value,
+                _ => throw new NotImplementedException() // !CALM
+            };
+
+            return new BooleanLiteralValue(result);
+        }
+
+        public FirstClassValue EvaluateArithmeticBinaryExpression(LocationInfo binaryExpressionLocation, TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
+        {
+            ArithmeticBinaryResolveMode resolveMode = GetArithmeticBinaryResolveMode(binaryExpressionLocation, left, right);
+
+            return resolveMode switch
+            {
+                ArithmeticBinaryResolveMode.Concat => EvaluateConcatenationArithmeticBinaryExpression(binaryExpressionLocation, binaryOperator, left, right),
+                ArithmeticBinaryResolveMode.Math => EvaluateMathArithmeticBinaryExpression(binaryOperator, left, right),
+                _ => throw new NotImplementedException() // !CALM
+            };
+        }
+
+        public FirstClassValue EvaluateConcatenationArithmeticBinaryExpression(LocationInfo binaryExpressionLocation, TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
+        {
+            if (binaryOperator != TokenKind.S_PLUS)
+            {
+                TerminateDiagnostic($"Can not perform the operation '{binaryOperator}' on {left.Kind} and {right.Kind}", binaryExpressionLocation); throw new Exception(); // !CALM
+            }
+
+            return new StringLiteralValue(string.Concat(left.ResolveString(), right.ResolveString()));
+        }
+
+        public FirstClassValue EvaluateMathArithmeticBinaryExpression(TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
+        {
+            RuntimeValueKind arithmeticResult = ArithmeticResolver.DetermineProperArithmeticMethod(left.Kind, right.Kind);
+
+            return arithmeticResult switch
+            {
+                RuntimeValueKind.L_INTEGER => new IntegerLiteralValue(ArithmeticResolver.SolveIntegerArithmetic(binaryOperator, left.ResolveInteger(), right.ResolveInteger())),
+                RuntimeValueKind.L_LONG => new LongLiteralValue(ArithmeticResolver.SolveLongArithmetic(binaryOperator, left.ResolveLong(), right.ResolveLong())),
+                RuntimeValueKind.L_FLOAT => new FloatLiteralValue(ArithmeticResolver.SolveFloatArithmetic(binaryOperator, left.ResolveFloat(), right.ResolveFloat())),
+                RuntimeValueKind.L_DOUBLE => new DoubleLiteralValue(ArithmeticResolver.SolveDoubleArithmetic(binaryOperator, left.ResolveDouble(), right.ResolveDouble())),
+                _ => throw new NotImplementedException() // !CALM
+            };
+        }
+
+        public FirstClassValue EvaluateUnaryExpression(Domain domain, UnaryExpressionNode unaryExpression)
+        {
+            FirstClassValue value = EvaluateFirstClass(domain, unaryExpression.Value);
+
+            return unaryExpression.Operator switch
+            {
+                TokenKind.S_EXCLAMATION => EvaluateNotUnaryExpression(unaryExpression.Location, value),
+                _ => throw new NotImplementedException() // !CALM
+            };
+        }
+
+        public FirstClassValue EvaluateNotUnaryExpression(LocationInfo unaryExpressionLocation, FirstClassValue value)
+        {
+            if (value.Kind != RuntimeValueKind.L_BOOLEAN)
+            {
+                TerminateDiagnostic($"The 'NOT' operator can not be applied to {value.Kind} literals.", unaryExpressionLocation);
+            }
+
+            return ((BooleanLiteralValue)value).Value ? RuntimeValueList.Bool_False : RuntimeValueList.Bool_True;
         }
 
         public FirstClassValue EvaluateAssignmentExpression(Domain domain, AssignmentExpressionNode node)
@@ -642,7 +710,7 @@ namespace Cascade2.Pipeline.Runtime
                 {
                     TokenKind arithmeticOperator = TokenLibrary.AssignmentToArithmeticOperator(node.Operator);
 
-                    value = EvaluateArithmeticBinaryExpression(domain, node.Location, arithmeticOperator, memberExpressionInfo.Object, value);
+                    value = EvaluateArithmeticBinaryExpression(node.Location, arithmeticOperator, memberExpressionInfo.Object, value);
                 }
 
                 return memberExpressionInfo.Object.AssignMember(this, node.Location, memberExpressionInfo.MemberName, value);
@@ -660,7 +728,7 @@ namespace Cascade2.Pipeline.Runtime
                 }
 
                 TokenKind arithmeticOperator = TokenLibrary.AssignmentToArithmeticOperator(node.Operator);
-                value = EvaluateArithmeticBinaryExpression(domain, node.Location, arithmeticOperator, existingValue!.Value, value);
+                value = EvaluateArithmeticBinaryExpression(node.Location, arithmeticOperator, existingValue!.Value, value);
             }
 
             return domain.AssignVariable(this, node.Location, key, value);

@@ -1,4 +1,4 @@
-﻿namespace Cascade2.Pipeline.Runtime.Tools
+﻿namespace Cascade.Pipeline.Runtime.Tools
 {
     public enum MemberModifier
     {

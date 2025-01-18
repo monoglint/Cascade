@@ -1,8 +1,8 @@
 ﻿using System.Text;
-using Cascade2.Pipeline.Frontend.Parser.AST;
-using Cascade2.Pipeline.Runtime.Values;
+using Cascade.Pipeline.Frontend.Parser.AST;
+using Cascade.Pipeline.Runtime.Values;
 
-namespace Cascade2.Pipeline.Frontend.Parser.Tools
+namespace Cascade.Pipeline.Frontend.Parser.Tools
 {
     public static class TypeExpressionList
     {

@@ -1,4 +1,4 @@
-﻿namespace Cascade2
+﻿namespace Cascade
 {
     public class Program
     {

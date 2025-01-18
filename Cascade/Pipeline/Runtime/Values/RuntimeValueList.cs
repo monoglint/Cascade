@@ -1,4 +1,4 @@
-﻿namespace Cascade2.Pipeline.Runtime.Values
+﻿namespace Cascade.Pipeline.Runtime.Values
 {
     // A list of immutable starter values.
     public readonly struct RuntimeValueList

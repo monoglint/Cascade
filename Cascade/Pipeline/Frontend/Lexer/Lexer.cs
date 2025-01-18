@@ -1,7 +1,7 @@
-﻿using Cascade2.Pipeline.Frontend.Parser.AST;
-using Cascade2.Pipeline.Shared;
+﻿using Cascade.Pipeline.Frontend.Parser.AST;
+using Cascade.Pipeline.Shared;
 
-namespace Cascade2.Pipeline.Frontend.Lexer
+namespace Cascade.Pipeline.Frontend.Lexer
 {
     public static class Symbols
     {

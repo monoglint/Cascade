@@ -1,6 +1,6 @@
-﻿using Cascade2.Pipeline.Frontend.Lexer;
+﻿using Cascade.Pipeline.Frontend.Lexer;
 
-namespace Cascade2.Pipeline.Frontend.Parser.Tools
+namespace Cascade.Pipeline.Frontend.Parser.Tools
 {
     public static class StandardValueTypeCreator
     {
