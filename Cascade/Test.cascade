@@ -1,2 +1,5 @@
-Console.Write("Hello! What is your name?")
-Console.Write("Hello, " + Console.Read() + "!")
+string path = "FILE PATH HERE"
+
+File.Write(path, "Hello World!")
+
+Console.Write(File.Read(path))

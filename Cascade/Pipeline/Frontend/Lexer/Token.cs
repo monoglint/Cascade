@@ -268,11 +268,6 @@ namespace Cascade.Pipeline.Frontend.Lexer
             { '>', TokenKind.S_RARROW },
 
             { '!', TokenKind.S_EXCLAMATION },
-
-            { 'I', TokenKind.S_INTEGER },
-            { 'L', TokenKind.S_LONG },
-            { 'F', TokenKind.S_FLOAT },
-            { 'D', TokenKind.S_DOUBLE },
         };
 
         static readonly Dictionary<string, TokenKind> Double = new()
@@ -295,6 +290,11 @@ namespace Cascade.Pipeline.Frontend.Lexer
 
             { "->", TokenKind.S_RARROW },
             { "<-", TokenKind.S_LARROW },
+
+            { "-I", TokenKind.S_INTEGER },
+            { "-L", TokenKind.S_LONG },
+            { "-F", TokenKind.S_FLOAT },
+            { "-D", TokenKind.S_DOUBLE },
         };
 
         static readonly Dictionary<string, TokenKind> String = new()

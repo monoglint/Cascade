@@ -154,12 +154,12 @@ namespace Cascade.Pipeline.Runtime.Values
     */
 
 
-    public sealed class CsFunctionExpressionValue(List<ParameterExpression> parameters, Func<Domain, List<FirstClassValue>, FirstClassValue> callMethod) : FirstClassValue
+    public sealed class CsFunctionExpressionValue(List<ParameterExpression> parameters, Func<Interpreter, Domain, List<FirstClassValue>, FirstClassValue> callMethod) : FirstClassValue
     {
         public override RuntimeValueKind Kind => RuntimeValueKind.E_CS_FUNCTION;
         public override TypeExpression Type { get; set; } = new TypeExpression(true, StandardValueType.CS_FUNCTION);
 
-        public Func<Domain, List<FirstClassValue>, FirstClassValue> CallMethod { get; set; } = callMethod;
+        public Func<Interpreter, Domain, List<FirstClassValue>, FirstClassValue> CallMethod { get; set; } = callMethod;
         public List<ParameterExpression> Parameters { get; set; } = parameters;
 
         public FirstClassValue Call(Interpreter interpreter, LocationInfo callLocation, Domain parentDomain, List<FirstClassValue> arguments)
@@ -168,7 +168,7 @@ namespace Cascade.Pipeline.Runtime.Values
 
             interpreter.VerifyAndLoadFunctionArguments(localDomain, callLocation, Parameters, arguments);
 
-            return CallMethod(localDomain, arguments);
+            return CallMethod(interpreter, localDomain, arguments);
         }
     }
 

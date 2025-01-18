@@ -30,7 +30,8 @@ namespace Cascade.Pipeline.Runtime.Tools
 
             if (IsGlobal)
             {
-                Objects.RuntimeConsoleObject.Insert(interpreter, this);
+                Builtins.ConsoleObject.Insert(interpreter, this);
+                Builtins.FileObject.Insert(interpreter, this);
             }
         }
 
