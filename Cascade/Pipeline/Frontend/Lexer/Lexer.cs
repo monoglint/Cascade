@@ -1,5 +1,4 @@
-﻿using Cascade.Pipeline.Frontend.Parser.AST;
-using Cascade.Pipeline.Shared;
+﻿using Cascade.Pipeline.Shared;
 
 namespace Cascade.Pipeline.Frontend.Lexer
 {

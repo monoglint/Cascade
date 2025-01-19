@@ -1,4 +1,5 @@
-﻿using Cascade.Pipeline.Frontend.Parser.Tools;
+﻿using Cascade.Pipeline.Frontend.Parser.AST;
+using Cascade.Pipeline.Frontend.Parser.Tools;
 using Cascade.Pipeline.Runtime.Values;
 using Cascade.Pipeline.Shared;
 
@@ -18,6 +19,7 @@ namespace Cascade.Pipeline.Runtime.Tools
         public Domain? Parent { get; set; }
         public Dictionary<string, MemberExpressionValue> Members { get; set; } = [];
         public DomainContext Context { get; set; }
+        public FirstClassValue? ExitContent { get; set; }
 
         // Whether or not the current domain is active.
         public bool IsActive { get; set; } = true;
@@ -30,7 +32,7 @@ namespace Cascade.Pipeline.Runtime.Tools
 
             if (IsGlobal)
             {
-                Builtins.ConsoleObject.Insert(interpreter, this);
+                Builtins.InOutObject.Insert(interpreter, this);
                 Builtins.FileObject.Insert(interpreter, this);
             }
         }
@@ -45,20 +47,24 @@ namespace Cascade.Pipeline.Runtime.Tools
             Parent?.Resolve(interpreter, deletionLocation, key);
         }
 
-        public FirstClassValue DeclareVariable(Interpreter interpreter, LocationInfo declarationLocation, List<MemberModifier> modifiers, TypeExpression type, string key, FirstClassValue value)
+        public FirstClassValue DeclareVariable(Interpreter interpreter, LocationInfo declarationLocation, List<MemberModifier> modifiers, TypeExpression type, string key, FirstClassValue value, bool bypassLookup = false)
         {
-            MemberExpressionValue? potentialExistingMember = LookUp(interpreter, declarationLocation, key);
-
-            // If the member already exists, then the programmer is trying to reset the modifiers and type.
-            if (potentialExistingMember != null)
+            // BypassLookup is needed since variables being declared from function parameters need priority.
+            if (!bypassLookup)
             {
-                potentialExistingMember.Modifiers = modifiers;
-                potentialExistingMember.Type = type;
+                MemberExpressionValue? potentialExistingMember = LookUp(interpreter, declarationLocation, key);
 
-                potentialExistingMember.SetValue(interpreter, declarationLocation, value);
+                // If the member already exists, then the programmer is trying to reset the modifiers and type.
+                if (potentialExistingMember != null)
+                {
+                    potentialExistingMember.Modifiers = modifiers;
+                    potentialExistingMember.Type = type;
 
-                return value;
-            }
+                    potentialExistingMember.SetValue(interpreter, declarationLocation, value);
+
+                    return value;
+                }
+            }   
 
             MemberExpressionValue member = new(interpreter, declarationLocation, modifiers, type, value);
 
@@ -92,9 +98,7 @@ namespace Cascade.Pipeline.Runtime.Tools
                 return null;
             }
 
-            validDomain.Members.TryGetValue(variableName, out MemberExpressionValue? memberValue);
-
-            return memberValue!;
+            return validDomain.Members[variableName];
         }
 
         public Domain? Resolve(Interpreter interpreter, LocationInfo resolveLocation, string variableName)
@@ -103,18 +107,18 @@ namespace Cascade.Pipeline.Runtime.Tools
             {
                 return this;
             }
-            else if (IsGlobal)
+            else if (Parent == null)
             {
                 return null;
             }
 
-            return Parent!.Resolve(interpreter, resolveLocation, variableName);
+            return Parent.Resolve(interpreter, resolveLocation, variableName);
         }
 
         // Exit out of all parent domains up to one with the given exit context.
         // Returns whether or not the exit was a success.
         // USE "HasContext" TO ENSURE THIS FUNCTION WORKS!
-        public void Exit(DomainContext exitContext)
+        public void Exit(DomainContext exitContext, FirstClassValue exitContent)
         {
             Domain selectedDomain = this;
 
@@ -122,6 +126,12 @@ namespace Cascade.Pipeline.Runtime.Tools
             {
                 selectedDomain = selectedDomain.Parent;
 
+                selectedDomain.IsActive = false;
+            }
+
+            if (selectedDomain.Context == exitContext)
+            {
+                selectedDomain.ExitContent = exitContent;
                 selectedDomain.IsActive = false;
             }
         }

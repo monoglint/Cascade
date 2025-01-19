@@ -21,8 +21,25 @@ namespace Cascade.Pipeline.Runtime.Values
         }
     }
 
-    public static class ArithmeticResolver
+    public static class NumericResolver
     {
+        public static bool SolveComparison<T>(TokenKind binaryOperator, T value0, T value1) where T : IComparable<T>
+        {
+            return binaryOperator switch
+            {
+                TokenKind.S_RARROW => value0.CompareTo(value1) > 0,
+                TokenKind.S_LARROW => value0.CompareTo(value1) < 0,
+                TokenKind.S_GREATER_OR_EQUAL_TO => value0.CompareTo(value1) >= 0,
+                TokenKind.S_LESS_OR_EQUAL_TO => value0.CompareTo(value1) <= 0,
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        public static bool SolveDoubleComparison(TokenKind binaryOperator, double value0, double value1) => SolveComparison(binaryOperator, value0, value1);
+        public static bool SolveFloatComparison(TokenKind binaryOperator, float value0, float value1) => SolveComparison(binaryOperator, value0, value1);
+        public static bool SolveIntegerComparison(TokenKind binaryOperator, int value0, int value1) => SolveComparison(binaryOperator, value0, value1);
+        public static bool SolveLongComparison(TokenKind binaryOperator, long value0, long value1) => SolveComparison(binaryOperator, value0, value1);
+
         public static double SolveDoubleArithmetic(TokenKind binaryOperator, double value0, double value1) => binaryOperator switch
         {
             TokenKind.S_PLUS => value0 + value1,

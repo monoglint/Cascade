@@ -1,1 +1,18 @@
-Console.Write("Hello, world!")
+class functionalProgramming
+{
+	int addNumbers(int a, int b)
+	{
+		return a + b
+	}
+
+	construct default() { }
+}
+
+object:functionalProgramming newObj = new functionalProgramming -> default()
+
+void call(func function)
+{
+	function(3$i, 5$i)
+}
+
+call(newObj.addNumbers)

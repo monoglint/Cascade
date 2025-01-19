@@ -28,7 +28,6 @@ namespace Cascade.Executor
             }
 
 
-
             Parser parser = new(tokens, code);
 
             Stopwatch parseSW = Stopwatch.StartNew();

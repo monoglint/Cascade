@@ -1,4 +1,5 @@
-﻿using Cascade.Pipeline.Frontend.Lexer;
+﻿using System.Reflection;
+using Cascade.Pipeline.Frontend.Lexer;
 using Cascade.Pipeline.Frontend.Parser.AST;
 using Cascade.Pipeline.Frontend.Parser.Tools;
 using Cascade.Pipeline.Runtime.Tools;
@@ -519,8 +520,13 @@ namespace Cascade.Pipeline.Frontend.Parser
             _position++;
 
             VariableDeclarationStatementNode variableDeclarationStatement = ParseVariableDeclarationStatement();
+    
+            if (variableDeclarationStatement.AccessPoint.Kind == AstNodeKind.E_ACCESS_MEMBER)
+            {
+                TerminateDiagnostic("The iterator variable can not be declared within an external body.", variableDeclarationStatement.Location);
+            }
 
-            Expect(TokenKind.S_RARROW);
+            Expect(TokenKind.S_RPOINTER);
 
             ExpressionNode secondExpression = ParseExpression();
 
@@ -635,7 +641,6 @@ namespace Cascade.Pipeline.Frontend.Parser
             return left;
         }
 
-
         private FunctionExpressionNode ParseFunctionExpression(TypeExpressionNode returnType)
         {
             LocationInfo startLocation = Now.Location;
@@ -672,8 +677,8 @@ namespace Cascade.Pipeline.Frontend.Parser
 
         private ExpressionNode ParseLogicalOrBinaryExpression() => ParseBinaryExpression(ParseLogicalAndBinaryExpression, TokenCategories.LogicalOrOperators);
         private ExpressionNode ParseLogicalAndBinaryExpression() => ParseBinaryExpression(ParseDirectComparisonBinaryExpression, TokenCategories.LogicalAndOperators);
-        private ExpressionNode ParseDirectComparisonBinaryExpression() => ParseBinaryExpression(ParseNumericComparisonBinaryExpression, TokenCategories.DirectComparisonOperators);
-        private ExpressionNode ParseNumericComparisonBinaryExpression() => ParseBinaryExpression(ParseAdditiveBinaryExpression, TokenCategories.NumericComparisonOperators);
+        private ExpressionNode ParseDirectComparisonBinaryExpression() => ParseBinaryExpression(ParseNumericComparisonBinaryExpression, TokenCategories.DirectComparativeOperators);
+        private ExpressionNode ParseNumericComparisonBinaryExpression() => ParseBinaryExpression(ParseAdditiveBinaryExpression, TokenCategories.NumericComparativeOperators);
         private ExpressionNode ParseAdditiveBinaryExpression() => ParseBinaryExpression(ParseMultiplicativeBinaryExpression, TokenCategories.AdditiveOperators);
         private ExpressionNode ParseMultiplicativeBinaryExpression() => ParseBinaryExpression(ParseExponentialBinaryExpression, TokenCategories.MultiplicativeOperators);
         private ExpressionNode ParseExponentialBinaryExpression() => ParseBinaryExpression(ParseUnaryExpression, TokenCategories.ExponentialOperators);
@@ -706,7 +711,7 @@ namespace Cascade.Pipeline.Frontend.Parser
             ExpressionNode classReference = ParseCallMemberExpression();
 
             // Expect a comma to separate the class and the constructor.
-            Expect(TokenKind.S_COMMA);
+            Expect(TokenKind.S_RPOINTER);
 
             var (MemberName, Computed) = ParseGetMemberName();
             List<ExpressionNode> arguments = ParseArguments();

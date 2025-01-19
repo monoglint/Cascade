@@ -48,6 +48,10 @@ namespace Cascade.Pipeline.Frontend.Parser.Tools
                 {
                     return StandardValueType.CONSTRUCT;
                 }
+                case TokenKind.K_FUNCTION:
+                {
+                    return StandardValueType.FUNCTION;
+                }
                 case TokenKind.K_DYNAMIC:
                 {
                     return StandardValueType.DYNAMIC;

@@ -46,7 +46,9 @@ namespace Cascade.Pipeline.Runtime
                 // Note: Programs are resolved initially.
                 case VariableDeclarationStatementNode variableDeclarationStatement:
                 {
-                    return EvaluateVariableDeclarationStatement(domain, variableDeclarationStatement);
+                    EvaluateVariableDeclarationStatement(domain, variableDeclarationStatement);
+
+                    return RuntimeValueList.NullLiteral;
                 }
                 case ExitStatementNode exitStatement:
                 {
@@ -59,6 +61,18 @@ namespace Cascade.Pipeline.Runtime
                 case DeleteStatementNode deleteStatement:
                 {
                     return EvaluateDeleteStatement(domain, deleteStatement);
+                }
+                case WhileLoopStatementNode whileStatement:
+                {
+                    return EvaluateWhileLoopStatement(domain, whileStatement);
+                }
+                case PostWhileLoopStatementNode postWhileStatement:
+                {
+                    return EvaluatePostWhileLoopStatement(domain, postWhileStatement);
+                }
+                case ForLoopStatementNode forLoopStatement:
+                {
+                    return EvaluateForLoopStatement(domain, forLoopStatement);
                 }
 
                 case AccessMemberExpressionNode accessMemberExpression:
@@ -113,6 +127,10 @@ namespace Cascade.Pipeline.Runtime
                 case IntegerLiteralNode integerLiteral:
                 {
                     return EvaluateIntegerLiteral(integerLiteral);
+                }
+                case LongLiteralNode longLiteral:
+                {
+                    return EvaluateLongLiteral(longLiteral);
                 }
                 case FloatLiteralNode floatLiteral:
                 {
@@ -247,7 +265,7 @@ namespace Cascade.Pipeline.Runtime
                     TerminateDiagnostic($"Expected parameter type of {variableType}. Got {variableValue.Type}. (Param {pointer + 1})", callLocation);
                 }
 
-                domain.DeclareVariable(this, callLocation, [], variableType, parameter.Identifier, variableValue);
+                domain.DeclareVariable(this, callLocation, [], variableType, parameter.Identifier, variableValue, true);
 
                 pointer++;
             }
@@ -255,6 +273,11 @@ namespace Cascade.Pipeline.Runtime
 
         public FirstClassValue CallFunctionExpression(Domain parentDomain, LocationInfo callLocation, FunctionExpressionValue function, List<FirstClassValue> arguments, Dictionary<string, MemberExpressionValue>? defaultVariables = null)
         {
+            if (parentDomain.Context == DomainContext.FUNCTION)
+            {
+                parentDomain = parentDomain.Parent!;
+            }
+
             Domain localDomain = new(this, parentDomain, DomainContext.FUNCTION);
 
             VerifyAndLoadFunctionArguments(localDomain, callLocation, function.Parameters, arguments);
@@ -264,18 +287,18 @@ namespace Cascade.Pipeline.Runtime
             {
                 foreach (KeyValuePair<string, MemberExpressionValue> pair in defaultVariables)
                 {
-                    localDomain.DeclareVariable(this, callLocation, pair.Value.Modifiers, pair.Value.Type, pair.Key, pair.Value.Value);
+                    localDomain.DeclareVariable(this, callLocation, pair.Value.Modifiers, pair.Value.Type, pair.Key, pair.Value.Value, true);
                 }
             }
 
-            FirstClassValue functionExport = EvaluateStatementList(localDomain, function.Body);
+            FirstClassValue functionResult = EvaluateStatementList(localDomain, function.Body);
 
-            if (!TypeComparator.TypesMatch(function.ReturnType, functionExport.Type))
+            if (!TypeComparator.TypesMatch(function.ReturnType, functionResult.Type))
             {
-                TerminateDiagnostic($"Function expected to return {function.ReturnType}, instead returned {functionExport.Type}", callLocation);
+                TerminateDiagnostic($"Function expected to return {function.ReturnType}, instead returned {functionResult.Type}", callLocation);
             }
 
-            return functionExport;
+            return functionResult;
         }
 
         public List<FirstClassValue> EvaluateArguments(Domain domain, List<ExpressionNode> arguments)
@@ -285,8 +308,11 @@ namespace Cascade.Pipeline.Runtime
 
         public FirstClassValue EvaluateStatementList(Domain domain, List<StatementNode> statements)
         {
-            foreach (StatementNode statement in statements)
+            int pointer = 0;
+
+            while (pointer < statements.Count)
             {
+                StatementNode statement = statements[pointer];
                 FirstClassValue result = EvaluateFirstClass(domain, statement);
 
                 // Check exit statements.
@@ -296,15 +322,20 @@ namespace Cascade.Pipeline.Runtime
 
                     if (!domain.HasContext(exitStatement.Context))
                     {
-                        TerminateDiagnostic($"Attempted to execute an 'exit {exitStatement.Context}' statement outside of a {exitStatement.Context}.", exitStatement.Location);
-
-                        return RuntimeValueList.NullLiteral;
+                        TerminateDiagnostic($"Attempted to execute an 'exit {exitStatement.Context}' statement outside of a {exitStatement.Context}.", exitStatement.Location); throw new Exception(); // !CALM
                     }
 
-                    domain.Exit(exitStatement.Context);
+                    domain.Exit(exitStatement.Context, result);
 
                     return result;
                 }
+
+                if (!domain.IsActive)
+                {
+                    return domain.ExitContent ?? RuntimeValueList.NullLiteral;
+                }
+
+                pointer++;
             }
 
             // Return nothing if there is not exit content.
@@ -381,9 +412,47 @@ namespace Cascade.Pipeline.Runtime
         */
 
 
+        public NullLiteralValue EvaluateForLoopStatement(Domain domain, ForLoopStatementNode forLoopStatement)
+        {
+            Domain localDomain = new(this, domain, DomainContext.LOOP);
+
+            MemberExpressionValue memberExpression = EvaluateVariableDeclarationStatement(localDomain, forLoopStatement.Variable);
+
+            throw new NotImplementedException();
+        }
+
         public NullLiteralValue EvaluateWhileLoopStatement(Domain domain, WhileLoopStatementNode whileLoopStatement)
         {
-            throw new NotImplementedException();
+            Domain localDomain = new(this, domain, DomainContext.LOOP);
+
+            while (true)
+            {
+                if (!((BooleanLiteralValue)EvaluateExpectedKind(domain, whileLoopStatement.Condition, RuntimeValueKind.L_BOOLEAN)).Value)
+                {
+                    break;
+                }
+
+                EvaluateStatementList(localDomain, whileLoopStatement.Body);
+            }
+
+            return RuntimeValueList.NullLiteral;
+        }
+
+        public NullLiteralValue EvaluatePostWhileLoopStatement(Domain domain, PostWhileLoopStatementNode postWhileLoopStatement)
+        {
+            Domain localDomain = new(this, domain, DomainContext.LOOP);
+
+            while (true)
+            {
+                EvaluateStatementList(localDomain, postWhileLoopStatement.Body);
+
+                if (!((BooleanLiteralValue)EvaluateExpectedKind(domain, postWhileLoopStatement.Condition, RuntimeValueKind.L_BOOLEAN)).Value)
+                {
+                    break;
+                }
+            }
+
+            return RuntimeValueList.NullLiteral;
         }
 
         public NullLiteralValue EvaluateDeleteStatement(Domain domain, DeleteStatementNode deleteStatement)
@@ -407,7 +476,6 @@ namespace Cascade.Pipeline.Runtime
 
         public NullLiteralValue EvaluateIfStatement(Domain domain, IfStatementNode ifStatement)
         {
-            bool clauseEvaluated = false;
             int pointer = 0;
 
             while (pointer < ifStatement.IfClauses.Count)
@@ -420,18 +488,18 @@ namespace Cascade.Pipeline.Runtime
                     Domain localIfClauseDomain = new(this, domain, DomainContext.IF_STATEMENT_CLAUSE);
                     EvaluateStatementList(localIfClauseDomain, clause.Body);
 
-                    clauseEvaluated = true;
-
-                    break;
+                    return RuntimeValueList.NullLiteral;
                 }
 
                 pointer++;
             }
 
-            if (!clauseEvaluated && ifStatement.ElseClause != null)
+            if (ifStatement.ElseClause != null)
             {
                 Domain localElseClauseDomain = new(this, domain, DomainContext.IF_STATEMENT_CLAUSE);
                 EvaluateStatementList(localElseClauseDomain, ifStatement.ElseClause.Body);
+
+                return RuntimeValueList.NullLiteral;
             }
 
             return RuntimeValueList.NullLiteral;
@@ -447,7 +515,7 @@ namespace Cascade.Pipeline.Runtime
             return EvaluateStatementList(domain, program.Body);
         }
 
-        public NullLiteralValue EvaluateVariableDeclarationStatement(Domain domain, VariableDeclarationStatementNode variableDeclaration)
+        public MemberExpressionValue EvaluateVariableDeclarationStatement(Domain domain, VariableDeclarationStatementNode variableDeclaration)
         {
             // Get the value of the variable.
             FirstClassValue value = EvaluateFirstClass(domain, variableDeclaration.Value);
@@ -459,16 +527,28 @@ namespace Cascade.Pipeline.Runtime
                 var memberExpressionInfo = GetMemberExpressionInfo(domain, (AccessMemberExpressionNode)variableDeclaration.AccessPoint);
                 string key = memberExpressionInfo.MemberName;
 
-                memberExpressionInfo.Object.DeclareMember(this, variableDeclaration.Location, variableDeclaration.Modifiers, evaluatedTypeExpression, key, (FirstClassValue)value);
+                memberExpressionInfo.Object.DeclareMember(this, variableDeclaration.Location, variableDeclaration.Modifiers, evaluatedTypeExpression, key, value);
+
+                return memberExpressionInfo.Object.Members[key];
             }
             else if (variableDeclaration.AccessPoint.Kind == AstNodeKind.IDENTIFIER)
             {
                 string key = ((IdentifierExpressionNode)variableDeclaration.AccessPoint).Value;
 
-                domain.DeclareVariable(this, variableDeclaration.Location, variableDeclaration.Modifiers, evaluatedTypeExpression, key, (FirstClassValue)value);
+                domain.DeclareVariable(this, variableDeclaration.Location, variableDeclaration.Modifiers, evaluatedTypeExpression, key, value);
+
+                return domain.Members[key];
+            }
+            else if (variableDeclaration.AccessPoint.IsLiteral())
+            {
+                string key = EvaluateFirstClass(domain, variableDeclaration.AccessPoint).ResolveString();
+                
+                domain.DeclareVariable(this, variableDeclaration.Location, variableDeclaration.Modifiers, evaluatedTypeExpression, key, value);
+
+                return domain.Members[key];
             }
 
-            return RuntimeValueList.NullLiteral;
+            TerminateDiagnostic("Could not properly declare the variable. Please access a member, use an identifier, or use a bracketed literal to name your variable.", variableDeclaration.Location); throw new Exception(); // !CALM
         }
 
 
@@ -575,7 +655,7 @@ namespace Cascade.Pipeline.Runtime
 
         public TypeExpression EvaluateTypeExpression(Domain domain, UnevaluatedTypeExpression typeExpression)
         {
-            List<FirstClassValue> newMeta = [];
+            List<RuntimeValue> newMeta = [];
 
             if (typeExpression.HasMeta())
             {
@@ -585,7 +665,7 @@ namespace Cascade.Pipeline.Runtime
                 {
                     ExpressionNode metaNode = typeExpression.Meta[pointer++];
 
-                    newMeta.Add((FirstClassValue)Evaluate(domain, metaNode));
+                    newMeta.Add(Evaluate(domain, metaNode));
                 }
             }
 
@@ -619,7 +699,44 @@ namespace Cascade.Pipeline.Runtime
                 return EvaluateLogicalBinaryExpression(binaryExpression.Location, binaryOperator, left, right);
             }
 
+            else if (TokenCategories.DirectComparativeOperators.Contains(binaryOperator))
+            {
+                return EvaluateDirectComparativeBinaryExpression(binaryOperator, left, right);
+            }
+            else if (TokenCategories.NumericComparativeOperators.Contains(binaryOperator))
+            {
+                return EvaluateNumericComparativeBinaryExpression(binaryOperator, left, right);
+            }
+
             TerminateDiagnostic($"This operator has not been implemented yet: {binaryOperator}", binaryExpression.Location); throw new Exception(); // !CALM
+        }
+
+        public FirstClassValue EvaluateNumericComparativeBinaryExpression(TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
+        {
+            RuntimeValueKind arithmeticResult = NumericResolver.DetermineProperArithmeticMethod(left.Kind, right.Kind);
+
+            bool result = arithmeticResult switch
+            {
+                RuntimeValueKind.L_INTEGER => NumericResolver.SolveIntegerComparison(binaryOperator, left.ResolveInteger(), right.ResolveInteger()),
+                RuntimeValueKind.L_LONG => NumericResolver.SolveLongComparison(binaryOperator, left.ResolveLong(), right.ResolveLong()),
+                RuntimeValueKind.L_FLOAT => NumericResolver.SolveFloatComparison(binaryOperator, left.ResolveFloat(), right.ResolveFloat()),
+                RuntimeValueKind.L_DOUBLE => NumericResolver.SolveDoubleComparison(binaryOperator, left.ResolveDouble(), right.ResolveDouble()),
+                _ => throw new NotImplementedException() // !CALM
+            };
+
+            return result ? RuntimeValueList.Bool_True : RuntimeValueList.Bool_False;
+        }
+
+        public FirstClassValue EvaluateDirectComparativeBinaryExpression(TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
+        {
+            bool result = binaryOperator switch
+            {
+                TokenKind.S_EQUAL_TO => left.Kind == right.Kind && left.ResolveString() == right.ResolveString(),
+                TokenKind.S_NOT_EQUAL_TO => left.Kind != right.Kind || left.ResolveString() != right.ResolveString(),
+                _ => throw new NotImplementedException() // !CALM
+            };
+
+            return result ? RuntimeValueList.Bool_True : RuntimeValueList.Bool_False;
         }
 
         public FirstClassValue EvaluateLogicalBinaryExpression(LocationInfo binaryExpressionLocation, TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
@@ -636,7 +753,7 @@ namespace Cascade.Pipeline.Runtime
                 _ => throw new NotImplementedException() // !CALM
             };
 
-            return new BooleanLiteralValue(result);
+            return result ? RuntimeValueList.Bool_True : RuntimeValueList.Bool_False;
         }
 
         public FirstClassValue EvaluateArithmeticBinaryExpression(LocationInfo binaryExpressionLocation, TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
@@ -663,14 +780,14 @@ namespace Cascade.Pipeline.Runtime
 
         public FirstClassValue EvaluateMathArithmeticBinaryExpression(TokenKind binaryOperator, FirstClassValue left, FirstClassValue right)
         {
-            RuntimeValueKind arithmeticResult = ArithmeticResolver.DetermineProperArithmeticMethod(left.Kind, right.Kind);
+            RuntimeValueKind arithmeticResult = NumericResolver.DetermineProperArithmeticMethod(left.Kind, right.Kind);
 
             return arithmeticResult switch
             {
-                RuntimeValueKind.L_INTEGER => new IntegerLiteralValue(ArithmeticResolver.SolveIntegerArithmetic(binaryOperator, left.ResolveInteger(), right.ResolveInteger())),
-                RuntimeValueKind.L_LONG => new LongLiteralValue(ArithmeticResolver.SolveLongArithmetic(binaryOperator, left.ResolveLong(), right.ResolveLong())),
-                RuntimeValueKind.L_FLOAT => new FloatLiteralValue(ArithmeticResolver.SolveFloatArithmetic(binaryOperator, left.ResolveFloat(), right.ResolveFloat())),
-                RuntimeValueKind.L_DOUBLE => new DoubleLiteralValue(ArithmeticResolver.SolveDoubleArithmetic(binaryOperator, left.ResolveDouble(), right.ResolveDouble())),
+                RuntimeValueKind.L_INTEGER => new IntegerLiteralValue(NumericResolver.SolveIntegerArithmetic(binaryOperator, left.ResolveInteger(), right.ResolveInteger())),
+                RuntimeValueKind.L_LONG => new LongLiteralValue(NumericResolver.SolveLongArithmetic(binaryOperator, left.ResolveLong(), right.ResolveLong())),
+                RuntimeValueKind.L_FLOAT => new FloatLiteralValue(NumericResolver.SolveFloatArithmetic(binaryOperator, left.ResolveFloat(), right.ResolveFloat())),
+                RuntimeValueKind.L_DOUBLE => new DoubleLiteralValue(NumericResolver.SolveDoubleArithmetic(binaryOperator, left.ResolveDouble(), right.ResolveDouble())),
                 _ => throw new NotImplementedException() // !CALM
             };
         }

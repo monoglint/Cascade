@@ -84,6 +84,17 @@ namespace Cascade.Pipeline.Frontend.Parser.AST
             AstNodeKind.L_DOUBLE,
         ];
 
+        // Literals
+        public static readonly HashSet<AstNodeKind> Literals = [
+            AstNodeKind.L_STRING,
+            AstNodeKind.L_INTEGER,
+            AstNodeKind.L_LONG,
+            AstNodeKind.L_FLOAT,
+            AstNodeKind.L_DOUBLE,
+            AstNodeKind.L_NULL,
+            AstNodeKind.L_BOOLEAN,
+        ];
+
         // Nodes that can be used for computing keys for member containers.
         public static readonly HashSet<AstNodeKind> ComputableKeys = [
             AstNodeKind.L_FLOAT,
@@ -111,6 +122,7 @@ namespace Cascade.Pipeline.Frontend.Parser.AST
 
         public bool IsArithmeticOperand() => NodeCategories.ArithmeticOperands.Contains(Kind);
         public bool IsComputableKey() => NodeCategories.ComputableKeys.Contains(Kind);
+        public bool IsLiteral() => NodeCategories.Literals.Contains(Kind);
     }
 
     public abstract class StatementNode : AstNode

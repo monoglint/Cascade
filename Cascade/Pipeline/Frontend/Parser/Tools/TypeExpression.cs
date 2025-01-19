@@ -45,12 +45,12 @@ namespace Cascade.Pipeline.Frontend.Parser.Tools
         }
     }
 
-    public class TypeExpression(bool mutable, StandardValueType standard, List<FirstClassValue>? meta = null, bool? nullable = false)
+    public class TypeExpression(bool mutable, StandardValueType standard, List<RuntimeValue>? meta = null, bool? nullable = false)
     {
         public bool Mutable { get; } = mutable;
         public bool Nullable { get; internal set; } = nullable != null && (bool)nullable;
         public StandardValueType Standard { get; internal set; } = standard;
-        public List<FirstClassValue>? Meta { get; internal set; } = meta;
+        public List<RuntimeValue>? Meta { get; internal set; } = meta;
 
         public void SetNullable(bool nullable)
         {
@@ -68,7 +68,7 @@ namespace Cascade.Pipeline.Frontend.Parser.Tools
             }
         }
 
-        public void SetMeta(List<FirstClassValue>? meta = null)
+        public void SetMeta(List<RuntimeValue>? meta = null)
         {
             if (Mutable)
             {
@@ -91,6 +91,7 @@ namespace Cascade.Pipeline.Frontend.Parser.Tools
 
                 while (pointer < Meta!.Count)
                 {
+                    meta.Append(' ');
                     meta.Append(Meta[pointer++].ToString());
                 }
             }

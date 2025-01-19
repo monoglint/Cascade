@@ -5,11 +5,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationIcon>CascadeIcon.ico</ApplicationIcon>
+    <ApplicationIcon>FileIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="CascadeIcon.ico" />
+    <Content Include="FileIcon.ico" />
   </ItemGroup>
 
   <ItemGroup>

@@ -43,6 +43,8 @@ namespace Cascade.Pipeline.Frontend.Lexer
         K_CONSTRUCT,
         K_DYNAMIC,
 
+        K_FUNCTION,
+
         K_DELETE,
         K_ENSURE,
 
@@ -93,6 +95,9 @@ namespace Cascade.Pipeline.Frontend.Lexer
         S_RARROW,
         S_LARROW,
 
+        S_RPOINTER,
+        S_LPOINTER,
+
         S_ASSIGN,                //  =
         S_ASSIGN_ADD,
         S_ASSIGN_SUB,
@@ -106,10 +111,10 @@ namespace Cascade.Pipeline.Frontend.Lexer
         S_XOR,
         S_EXCLAMATION,
 
-        S_EQUAL,              //  ==
-        S_NOT_EQUAL,          //  !=
-        S_GREATER_OR_EQUALS,   //  >=
-        S_LESS_OR_EQUALS      //  <=
+        S_EQUAL_TO,              //  ==
+        S_NOT_EQUAL_TO,          //  !=
+        S_GREATER_OR_EQUAL_TO,   //  >=
+        S_LESS_OR_EQUAL_TO      //  <=
     }
 
     public static class TokenCategories
@@ -141,26 +146,30 @@ namespace Cascade.Pipeline.Frontend.Lexer
             TokenKind.K_CLASS,
             TokenKind.K_OBJECT,
             TokenKind.K_CONSTRUCT,
+            TokenKind.K_FUNCTION,
             TokenKind.K_DYNAMIC,
         ];
 
-        public static readonly HashSet<TokenKind> ArithmeticOperators = 
-        [
+        public static readonly HashSet<TokenKind> ArithmeticOperators = [
             TokenKind.S_PLUS, TokenKind.S_MINUS,
             TokenKind.S_ASTERISK, TokenKind.S_SLASH,
             TokenKind.S_CARET,
         ];
 
-        public static readonly HashSet<TokenKind> LogicalOperators =
-        [
+        public static readonly HashSet<TokenKind> LogicalOperators = [
             TokenKind.S_AND, TokenKind.S_OR,
+        ];
+
+        public static readonly HashSet<TokenKind> ComparativeOperators = [
+            TokenKind.S_EQUAL_TO, TokenKind.S_NOT_EQUAL_TO,
+            TokenKind.S_LARROW, TokenKind.S_LESS_OR_EQUAL_TO, TokenKind.S_RARROW, TokenKind.S_GREATER_OR_EQUAL_TO,
         ];
 
         public static readonly HashSet<TokenKind> LogicalAndOperators = [TokenKind.S_AND];
         public static readonly HashSet<TokenKind> LogicalOrOperators = [TokenKind.S_OR];
 
-        public static readonly HashSet<TokenKind> DirectComparisonOperators = [TokenKind.S_EQUAL, TokenKind.S_NOT_EQUAL];
-        public static readonly HashSet<TokenKind> NumericComparisonOperators = [TokenKind.S_LARROW, TokenKind.S_LESS_OR_EQUALS, TokenKind.S_RARROW, TokenKind.S_GREATER_OR_EQUALS];
+        public static readonly HashSet<TokenKind> DirectComparativeOperators = [TokenKind.S_EQUAL_TO, TokenKind.S_NOT_EQUAL_TO];
+        public static readonly HashSet<TokenKind> NumericComparativeOperators = [TokenKind.S_LARROW, TokenKind.S_LESS_OR_EQUAL_TO, TokenKind.S_RARROW, TokenKind.S_GREATER_OR_EQUAL_TO];
         public static readonly HashSet<TokenKind> AdditiveOperators = [TokenKind.S_PLUS, TokenKind.S_MINUS];
         public static readonly HashSet<TokenKind> MultiplicativeOperators = [TokenKind.S_ASTERISK, TokenKind.S_SLASH];
         public static readonly HashSet<TokenKind> ExponentialOperators = [TokenKind.S_CARET];
@@ -219,8 +228,9 @@ namespace Cascade.Pipeline.Frontend.Lexer
         public bool IsLogicalOperator() => TokenCategories.LogicalOperators.Contains(Kind);
         public bool IsLogicalAndOperator() => TokenCategories.LogicalAndOperators.Contains(Kind);
         public bool IsLogicalOrOperator() => TokenCategories.LogicalOrOperators.Contains(Kind);
-        public bool IsDirectComparisonOperator() => TokenCategories.DirectComparisonOperators.Contains(Kind);
-        public bool IsNumericComparisonOperator() => TokenCategories.NumericComparisonOperators.Contains(Kind);
+        public bool IsComparativeOperator() => TokenCategories.ComparativeOperators.Contains(Kind);
+        public bool IsDirectComparativeOperator() => TokenCategories.DirectComparativeOperators.Contains(Kind);
+        public bool IsNumericComparativeOperator() => TokenCategories.NumericComparativeOperators.Contains(Kind);
         public bool IsAdditiveOperator() => TokenCategories.AdditiveOperators.Contains(Kind);
         public bool IsMultiplicativeOperator() => TokenCategories.MultiplicativeOperators.Contains(Kind);
         public bool IsExponentialOperator() => TokenCategories.ExponentialOperators.Contains(Kind);
@@ -272,10 +282,10 @@ namespace Cascade.Pipeline.Frontend.Lexer
 
         static readonly Dictionary<string, TokenKind> Double = new()
         {
-            { "==", TokenKind.S_EQUAL },
-            { "!=", TokenKind.S_NOT_EQUAL },
-            { ">=", TokenKind.S_GREATER_OR_EQUALS },
-            { "<=", TokenKind.S_LESS_OR_EQUALS },
+            { "==", TokenKind.S_EQUAL_TO },
+            { "!=", TokenKind.S_NOT_EQUAL_TO },
+            { ">=", TokenKind.S_GREATER_OR_EQUAL_TO },
+            { "<=", TokenKind.S_LESS_OR_EQUAL_TO },
 
             { "+=", TokenKind.S_ASSIGN_ADD },
             { "-=", TokenKind.S_ASSIGN_SUB },
@@ -288,8 +298,8 @@ namespace Cascade.Pipeline.Frontend.Lexer
             { "||", TokenKind.S_OR },
             { "^^", TokenKind.S_XOR },
 
-            { "->", TokenKind.S_RARROW },
-            { "<-", TokenKind.S_LARROW },
+            { "->", TokenKind.S_RPOINTER },
+            { "<-", TokenKind.S_LPOINTER },
 
             { "$i", TokenKind.S_INTEGER },
             { "$l", TokenKind.S_LONG },
@@ -330,6 +340,7 @@ namespace Cascade.Pipeline.Frontend.Lexer
             { "int", TokenKind.K_INTEGER },
             { "long", TokenKind.K_LONG },
             { "void", TokenKind.K_VOID },
+            { "func", TokenKind.K_FUNCTION },
             { "construct", TokenKind.K_CONSTRUCT },
             { "dynamic", TokenKind.K_DYNAMIC },
 

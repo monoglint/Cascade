@@ -1,4 +1,5 @@
-﻿using Cascade.Pipeline.Frontend.Parser.Tools;
+﻿using Cascade.Pipeline.Frontend.Parser.AST;
+using Cascade.Pipeline.Frontend.Parser.Tools;
 using Cascade.Pipeline.Runtime.Values;
 using Cascade.Pipeline.Shared;
 
@@ -12,29 +13,32 @@ namespace Cascade.Pipeline.Runtime.Tools
 
         public static class FileObject
         {
-            public static readonly string Identifier = "File";
+            public static readonly string Identifier = "file";
 
-            private static StringLiteralValue Read(Interpreter interpreter, Domain domain, LocationInfo callLocation, List<FirstClassValue> arguments)
+            private static StringLiteralValue Read(Interpreter interpreter, Domain domain, LocationInfo callLocation)
             {
-                string filePath = arguments[0].ResolveString();
+                string filePath = domain.Members["filePath"].Value.ResolveString();
 
-                interpreter.TerminateDiagnostic($"\"{filePath}\" is not a valid file path.", callLocation);
+                if (!File.Exists(filePath))
+                {
+                    interpreter.TerminateDiagnostic($"'{filePath}' is not a valid file path.", callLocation);
+                }
 
                 string result = File.ReadAllText(filePath);
 
                 return new StringLiteralValue(result);
             }
 
-            private static NullLiteralValue Write(Interpreter interpreter, Domain domain, LocationInfo callLocation, List<FirstClassValue> arguments)
+            private static NullLiteralValue Write(Interpreter interpreter, Domain domain, LocationInfo callLocation)
             {
-                string filePath = arguments[0].ResolveString();
+                string filePath = domain.Members["filePath"].Value.ResolveString();
 
                 if (!File.Exists(filePath))
                 {
-                    interpreter.TerminateDiagnostic($"\"{filePath}\" is not a valid file path.", callLocation);
+                    interpreter.TerminateDiagnostic($"'{filePath}' is not a valid file path.", callLocation);
                 }
 
-                File.WriteAllText(filePath, arguments[1].ResolveString());
+                File.WriteAllText(filePath, domain.Members["contents"].Value.ResolveString());
 
                 return new NullLiteralValue();
             }
@@ -43,7 +47,7 @@ namespace Cascade.Pipeline.Runtime.Tools
             {
                 ObjectExpressionValue obj = new(new Dictionary<string, MemberExpressionValue>
                 {
-                    {"Read", new MemberExpressionValue(interpreter, LocationConstant, MemberModifierConstant, TypeExpressionFunctionConstant,
+                    {"read", new MemberExpressionValue(interpreter, LocationConstant, MemberModifierConstant, TypeExpressionFunctionConstant,
                         new CsFunctionExpressionValue(
                             [
                                 new(
@@ -56,7 +60,7 @@ namespace Cascade.Pipeline.Runtime.Tools
                         )
                     )},
 
-                    {"Write", new MemberExpressionValue(interpreter, LocationConstant, MemberModifierConstant, TypeExpressionFunctionConstant,
+                    {"write", new MemberExpressionValue(interpreter, LocationConstant, MemberModifierConstant, TypeExpressionFunctionConstant,
                         new CsFunctionExpressionValue(
                             [
                                 new(
@@ -80,42 +84,56 @@ namespace Cascade.Pipeline.Runtime.Tools
             }
         }
 
-        public static class ConsoleObject
+        public static class InOutObject
         {
-            public static readonly string Identifier = "Console";
+            public static readonly string Identifier = "io";
 
-            private static NullLiteralValue Write(Interpreter interpreter, Domain domain, LocationInfo callLocation, List<FirstClassValue> arguments)
+            private static NullLiteralValue Write(Interpreter interpreter, Domain domain, LocationInfo callLocation)
             {
-                Console.WriteLine(arguments[0].ResolveString());
+                bool newline = ((BooleanLiteralValue)domain.Members["newLine"].Value).Value;
+                string text = domain.Members["text"].Value.ResolveString();
+
+                Console.Write(text);
+
+                if (newline)
+                {
+                    Console.Write('\n');
+                }
 
                 return RuntimeValueList.NullLiteral;
             }
 
-            public static StringLiteralValue Read(Interpreter interpreter, Domain domain, LocationInfo callLocation, List<FirstClassValue> arguments)
+            public static StringLiteralValue Read(Interpreter interpreter, Domain domain, LocationInfo callLocation)
             {
                 string? result = Console.ReadLine();
 
-                return new StringLiteralValue(result != null ? result : string.Empty);
+                return new StringLiteralValue(result ?? string.Empty);
             }
 
             public static void Insert(Interpreter interpreter, Domain domain)
             {
                 ObjectExpressionValue obj = new(new Dictionary<string, MemberExpressionValue>
                 {
-                    {"Write", new MemberExpressionValue(interpreter, LocationConstant, MemberModifierConstant, TypeExpressionFunctionConstant,
+                    {"write", new MemberExpressionValue(interpreter, LocationConstant, MemberModifierConstant, TypeExpressionFunctionConstant,
                         new CsFunctionExpressionValue(
                             [
                                 new(
                                     new TypeExpression(false, StandardValueType.DYNAMIC),
                                     "text",
                                     RuntimeValueList.NullLiteral
+                                ),
+
+                                new(
+                                    new TypeExpression(false, StandardValueType.BOOLEAN),
+                                    "newLine",
+                                    RuntimeValueList.Bool_False
                                 )
                             ],
                             Write
                         )
                     )},
 
-                    {"Read", new MemberExpressionValue(interpreter, LocationConstant, MemberModifierConstant, TypeExpressionFunctionConstant,
+                    {"read", new MemberExpressionValue(interpreter, LocationConstant, MemberModifierConstant, TypeExpressionFunctionConstant,
                         new CsFunctionExpressionValue(
                             [],
                             Read
